@@ -36,6 +36,9 @@ car = pygame.transform.scale(car, (70, 130))
 obs = pygame.image.load(resource_path("assets/obs.png")).convert_alpha()
 obs = pygame.transform.scale(obs, (90,140))
 
+obs2 = pygame.image.load(resource_path("assets/obs2.png")).convert_alpha()
+obs2 = pygame.transform.scale(obs2, (180,220))
+
 
 # Colors
 white = (255, 255, 255)
@@ -163,6 +166,13 @@ def gameLoop():
     obs_y = random.randint(-200, 0)
     obs_speed = 15
 
+    # Obstacle Truck
+    obs2_x = 0
+    obs2_y = 0
+    obs2_speed = 15
+    truck_spawn = False
+    truck_spawn_clock = 0
+
     # Score
     score = 0
     score_timer = 0
@@ -197,11 +207,12 @@ def gameLoop():
             if bg_speed_increae > 5000:
                 bg_speed += 1
                 obs_speed += 1
+                obs2_speed += 1
                 bg_speed_increae = 0
-
             if score == 350:
                 should_increase = False
                 obs_speed = 25
+                obs2_speed = 25
 
 
         # Moving The Obstacle
@@ -209,6 +220,20 @@ def gameLoop():
         if obs_y > 1000:
             obs_x = random.randint(130,500)
             obs_y = random.randint(-200, -100)
+
+        # Moving The Truck
+        truck_spawn_clock += clock.get_time()
+        if not truck_spawn and truck_spawn_clock > 5000:
+            obs2_x = random.randint(80,450)
+            obs2_y = random.randint(-350,-250)
+            truck_spawn = True
+            truck_spawn_clock = 0
+
+        if truck_spawn:
+            obs2_y += obs2_speed
+
+            if obs2_y > 1000:
+                truck_spawn = False
 
         # Reset Background Position
         if bg_y >= screen_height:
@@ -234,10 +259,15 @@ def gameLoop():
                 car_y = 770
 
         # Car and Obstacle Collition
-        car_rect = pygame.Rect(car_x + 10, car_y + 10, 50, 110)
-        obs_rect = pygame.Rect(obs_x + 15, obs_y + 10, 60, 115)
+        car_rect = pygame.Rect(car_x + 5, car_y + 5, 60, 120)
+        obs_rect = pygame.Rect(obs_x + 15, obs_y+ 10, 60, 120)
+        obs2_rect = pygame.Rect(obs2_x + 50, obs2_y, 80, 210)
 
-        if car_rect.colliderect(obs_rect) and not game_over:
+        if obs_rect.colliderect(obs2_rect):
+            obs2_x = random.randint(80,450)
+            obs2_y = random.randint(-350, -250)
+
+        if not game_over and (car_rect.colliderect(obs_rect) or car_rect.colliderect(obs2_rect)):
             if keys[pygame.K_LSHIFT]:
                 pass
             else:
@@ -245,11 +275,11 @@ def gameLoop():
                 game_over_sound.play()
                 obs_speed = 0
                 bg_speed = 0
+                obs2_speed = 0
                 should_increase = False
                 score_increase = False
                 if score > highscore:
                     highscore = score
-                    print(score,  "-", highscore)
                     with open("saves/save.txt", 'w') as f:
                         f.write(f"High-Score: " + str(highscore))
                 game_over = True
@@ -260,6 +290,10 @@ def gameLoop():
 
         # Plotting The Game's Obstacle Car
         gameWindow.blit(obs, (obs_x, obs_y))
+
+        # Plotting The Game's Obstacle Truck
+        if truck_spawn:
+            gameWindow.blit(obs2, (obs2_x, obs2_y))
 
         # Plotting and Control Of The Car
         gameWindow.blit(car,(car_x,car_y))
